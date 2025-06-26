@@ -17,11 +17,6 @@
 ### 🚀 Core Technologies
 - **⚡ Groq Inference Engine**: 10x faster than traditional APIs
 - **🧠 Hybrid Matching System**: Combines AI insights with rule-based logic
-- **📊 Weighted Scoring**:
-  ```python
-  total_score = (interests * 0.3) + (academics * 0.25) + 
-                (skills * 0.2) + (goals * 0.15) + (activities * 0.1)
-  ```
 - **📱 Responsive Design**: Works flawlessly on mobile, tablet, and desktop
 
 ---
@@ -52,7 +47,7 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.12.4 
 - [Groq API key](https://console.groq.com) (free account)
 
 ### Installation
@@ -80,7 +75,7 @@ pip install -r requirements.txt
    # Optional customizations:
    MODEL_NAME="llama3-70b-8192"
    TEMPERATURE=0.7
-   MAX_TOKENS=1024
+   MAX_TOKENS=500
    ```
 
 ### Launching the Application
@@ -94,50 +89,6 @@ streamlit run app.py
 python main_cli.py
 ```
 
----
-
-## ⚙️ Customization Guide
-
-### Career Database
-Edit `src/career_database.py` to add/update careers:
-```python
-CAREERS = {
-    "Data Scientist": {
-        "description": "Extract insights from complex datasets...",
-        "salary": "$100,000 - $150,000",
-        "education": "Master's in Computer Science",
-        "skills": ["Python", "Machine Learning", "Statistics"],
-        "outlook": "Growing 22% faster than average",
-        "category": "STEM & Technology"
-    },
-    # Add more careers here
-}
-```
-
-### Matching Algorithm
-Adjust weights in `src/career_matcher.py`:
-```python
-WEIGHTS = {
-    'interests': 0.35,    # Increased importance
-    'academics': 0.25,
-    'skills': 0.15,       # Reduced importance
-    'goals': 0.15,
-    'extracurriculars': 0.1
-}
-```
-
-### UI Customization
-Modify `config.toml` for theme changes:
-```toml
-[theme]
-primaryColor = "#4f8af4"
-backgroundColor = "#f0f5f9"
-secondaryBackgroundColor = "#e1e8f0"
-textColor = "#1a1a1a"
-font = "sans serif"
-```
-
----
 
 ## 🌐 Deployment Options
 
@@ -168,15 +119,6 @@ font = "sans serif"
    docker build -t pathfinder .
    docker run -p 8501:8501 -e GROQ_API_KEY=your_key pathfinder
    ```
-
-### Other Platforms
-| Platform | Command |
-|----------|---------|
-| **Heroku** | `web: streamlit run app.py --server.port=$PORT` |
-| **AWS EC2** | Use PM2: `pm2 start "streamlit run app.py"` |
-| **Google Cloud Run** | Deploy as container with port 8501 |
-
----
 
 ## 🧠 Technical Architecture
 
@@ -229,10 +171,12 @@ Distributed under the MIT License. See `LICENSE.md` for more information.
 5. Open a pull request
 
 ## 📞 Support
-For assistance, please open an issue in the [GitHub repository](https://github.com/AryaInGit/pathfinder-career-counselor/issues).
+For assistance, please open an issue in the [GitHub repository](https://github.com/AryaInGit/pathfinder-career-counselor).
 
 ---
 
 > **"🎓 Empowering students to discover their ideal career paths  
 > ⚡ Powered by Groq's lightning-fast AI inference  
 > 💬 Featuring dual-mode guidance: Quick Exploration & Deep Conversation"**
+
+Built with ❤️ by Arya Singh.
