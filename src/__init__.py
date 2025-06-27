@@ -1,0 +1,1 @@
+# PathFinder - AI Career Counseling Platform
