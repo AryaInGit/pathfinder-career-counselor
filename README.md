@@ -171,4 +171,4 @@ Distributed under the MIT License. See `LICENSE.md` for more information.
 5. Open a pull request
 
 ## 📞 Support
-For assistance, please open an issue in the [Gmail](arya.tech.ai@gmail.com).
+For assistance, please open an issue in the [Github Issues](https://github.com/AryaInGit/pathfinder-career-counselor/issues).
