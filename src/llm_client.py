@@ -1,84 +1,40 @@
 import os
 import json
-import logging
 from typing import Dict, Any
 from groq import Groq
 from dotenv import load_dotenv
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+# Try to import Streamlit (works in Streamlit environment)
 try:
     import streamlit as st
-    logger.info("Streamlit imported successfully")
 except ImportError:
     st = None
-    logger.warning("Streamlit not available in this environment")
 
 load_dotenv()
 
 class LLMClient:
     def __init__(self):
-        # Get API key with comprehensive fallback logic
+        # 1. Initialize api_key as None
         api_key = None
-        key_source = "Not found"
         
-        # 1. Check Streamlit secrets
+        # 2. First try Streamlit secrets
         if st and hasattr(st, 'secrets'):
             if 'GROQ_API_KEY' in st.secrets:
                 api_key = st.secrets['GROQ_API_KEY']
-                key_source = "Streamlit secrets"
-            elif 'groq' in st.secrets and 'api_key' in st.secrets['groq']:
-                api_key = st.secrets['groq']['api_key']
-                key_source = "Streamlit secrets (nested)"
         
-        # 2. Check environment variables
+        # 3. Then try environment variables
         if not api_key:
-            if os.getenv("GROQ_API_KEY"):
-                api_key = os.getenv("GROQ_API_KEY")
-                key_source = "Environment variable"
-            elif os.getenv("GROQ_API_KEY"):
-                api_key = os.getenv("GROQ_API_KEY")
-                key_source = "Alternative environment variable"
+            api_key = os.getenv("GROQ_API_KEY")
         
-        # 3. Check for common CI/CD environment variables
+        # 4. If still not found, raise explicit error
         if not api_key:
-            for var in ["SECRETS_GROQ_API_KEY", "ENV_GROQ_API_KEY", "GROQ_API_KEY"]:
-                if os.getenv(var):
-                    api_key = os.getenv(var)
-                    key_source = f"CI/CD variable ({var})"
-                    break
-        
-        # Final check and error handling
-        if not api_key:
-            error_msg = (
-                "GROQ_API_KEY not found in any sources. "
-                "Check your Streamlit secrets or environment variables."
+            raise RuntimeError(
+                "GROQ_API_KEY not found. "
+                "Please set it in Streamlit secrets (for cloud) or .env file (for local)."
             )
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
         
-        logger.info(f"Using Groq API key from: {key_source}")
-        
-        try:
-            # Initialize Groq client with validation
-            self.client = Groq(api_key=api_key)
-            logger.info("Groq client initialized successfully")
-        except Exception as e:
-            error_msg = f"Groq client initialization failed: {str(e)}"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg) from e
-        
-        # Get configuration with defaults
-        self.model = os.getenv("MODEL_NAME", "llama3-70b-8192")
-        self.temperature = float(os.getenv("TEMPERATURE", "0.7"))
-        self.max_tokens = int(os.getenv("MAX_TOKENS", "500"))
-        logger.info(f"Model: {self.model}, Temp: {self.temperature}, Max tokens: {self.max_tokens}")
-
-class LLMClient:
-    def __init__(self):
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        # 5. Initialize Groq client
+        self.client = Groq(api_key=api_key)
         self.model = os.getenv("MODEL_NAME", "llama3-70b-8192")
         self.temperature = float(os.getenv("TEMPERATURE", "0.7"))
         self.max_tokens = int(os.getenv("MAX_TOKENS", "500"))
