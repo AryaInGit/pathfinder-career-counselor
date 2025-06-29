@@ -1,62 +1,85 @@
 import os
 import json
-from typing import Dict, Any
-from groq import Groq
+import logging
+from typing import Dict, Any, Optional
 from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
+# Try to import Groq but don't fail if it doesn't work
+try:
+    from groq import Groq
+    GROQ_AVAILABLE = True
+except ImportError as e:
+    logger.error(f"Groq import failed: {str(e)}")
+    GROQ_AVAILABLE = False
+except Exception as e:
+    logger.error(f"Unexpected import error: {str(e)}")
+    GROQ_AVAILABLE = False
 
 load_dotenv()
 
 class LLMClient:
     def __init__(self):
-        # Get API key from environment variables first
-        api_key = os.getenv("GROQ_API_KEY")
+        self.client = None
+        self.initialized = False
+        self.error_message = ""
         
-        # If not found, try to get from Streamlit secrets (but only if Streamlit is available)
-        if not api_key:
-            api_key = self._get_streamlit_secret()
-        
-        # Validate API key
-        if not api_key:
-            raise RuntimeError(
-                "GROQ_API_KEY not found. "
-                "Please set it in Streamlit secrets (for cloud) or .env file (for local)."
-            )
-        
-        if len(api_key) < 30 or not api_key.startswith("gsk_"):
-            raise ValueError(
-                "Invalid API key format. "
-                "Groq API keys typically start with 'gsk_' and are 40+ characters."
-            )
-        
-        # Initialize Groq client
         try:
-            self.client = Groq(api_key=api_key)
-            # Simple validation request
-            self.client.models.list(limit=1)
+            # Get API key
+            api_key = self._get_api_key()
+            
+            # Initialize Groq client if available
+            if GROQ_AVAILABLE:
+                self.client = Groq(api_key=api_key)
+                # Test connection
+                self.client.models.list(limit=1)
+                self.initialized = True
+            else:
+                self.error_message = "Groq library not available"
+                
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to initialize Groq client: {str(e)}\n"
-                "Please verify your GROQ_API_KEY at https://console.groq.com"
-            ) from e
+            self.error_message = str(e)
+            logger.exception("Groq initialization failed")
         
         # Set configuration parameters
         self.model = os.getenv("MODEL_NAME", "llama3-70b-8192")
         self.temperature = float(os.getenv("TEMPERATURE", "0.7"))
         self.max_tokens = int(os.getenv("MAX_TOKENS", "500"))
 
-    def _get_streamlit_secret(self) -> str:
-        """Safely get Streamlit secret at runtime"""
-        try:
-            import streamlit as st
-            if hasattr(st, 'secrets') and 'GROQ_API_KEY' in st.secrets:
-                return st.secrets['GROQ_API_KEY']
-        except ImportError:
-            pass  # Streamlit not available
-        except Exception as e:
-            print(f"Warning: Could not access Streamlit secrets: {str(e)}")
-        return None
+    def _get_api_key(self) -> str:
+        """Retrieve API key from multiple sources"""
+        api_key = os.getenv("GROQ_API_KEY")
+        
+        # Try Streamlit secrets if not found in env
+        if not api_key:
+            try:
+                import streamlit as st
+                if hasattr(st, 'secrets') and 'GROQ_API_KEY' in st.secrets:
+                    api_key = st.secrets['GROQ_API_KEY']
+            except Exception:
+                pass  # Streamlit not available or not initialized
+        
+        if not api_key:
+            raise RuntimeError(
+                "GROQ_API_KEY not found in environment variables or Streamlit secrets. "
+                "Please set it in Streamlit secrets (for cloud) or .env file (for local)."
+            )
+        
+        return api_key
+
+    def is_initialized(self) -> bool:
+        return self.initialized
+
+    def get_error(self) -> str:
+        return self.error_message
 
     async def generate_response(self, prompt: str, system_message: str = "") -> str:
+        if not self.initialized:
+            return self._fallback_response()
+        
         try:
             messages = []
             if system_message:
@@ -72,10 +95,13 @@ class LLMClient:
 
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"Error generating LLM response: {e}")
-            return "I apologize, but I'm having trouble processing your request right now. Please try again."
+            logger.error(f"LLM request failed: {str(e)}")
+            return self._fallback_response()
 
     def generate_response_sync(self, prompt: str, system_message: str = "") -> str:
+        if not self.initialized:
+            return self._fallback_response()
+        
         try:
             messages = []
             if system_message:
@@ -91,8 +117,11 @@ class LLMClient:
 
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"Error generating LLM response: {e}")
-            return "I apologize, but I'm having trouble processing your request right now. Please try again."
+            logger.error(f"LLM request failed: {str(e)}")
+            return self._fallback_response()
+
+    def _fallback_response(self) -> str:
+        return "I'm having trouble connecting to the career counseling service. Please try again later or contact support."
 
     def extract_structured_data(self, text: str, schema: Dict[str, Any]) -> Dict[str, Any]:
         prompt = f"""
