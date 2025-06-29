@@ -4,7 +4,38 @@ from typing import List, Optional, Dict, Any
 from groq import Groq
 from dotenv import load_dotenv
 
+try:
+    import streamlit as st
+except ImportError:
+    st = None
+
 load_dotenv()
+
+class LLMClient:
+    def __init__(self):
+        # Get API key with fallback logic
+        api_key = None
+        
+        # 1. Check Streamlit secrets first (for cloud deployment)
+        if st and hasattr(st, 'secrets') and 'GROQ_API_KEY' in st.secrets:
+            api_key = st.secrets['GROQ_API_KEY']
+        
+        # 2. Check environment variables (for local development)
+        if not api_key:
+            api_key = os.getenv("GROQ_API_KEY")
+        
+        # 3. Raise error if still not found
+        if not api_key:
+            raise ValueError(
+                "GROQ_API_KEY not found. "
+                "Set it in Streamlit secrets or .env file."
+            )
+        
+        self.client = Groq(api_key=api_key)
+        self.model = os.getenv("MODEL_NAME", "llama3-70b-8192")
+        self.temperature = float(os.getenv("TEMPERATURE", "0.7"))
+        self.max_tokens = int(os.getenv("MAX_TOKENS", "500"))
+    
 
 class LLMClient:
     def __init__(self):
